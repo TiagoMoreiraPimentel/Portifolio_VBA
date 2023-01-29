@@ -1,7 +1,7 @@
 # Tela (forms) tela-cheia responsiva
 
-## 1 - Crie um módulo de classe
-# Crie um módulo de classe no seu projeto VBA e cole o código abaixo.
+# 1 - Crie um módulo de classe
+## Crie um módulo de classe no seu projeto VBA e cole o código abaixo.
 
     Option Explicit
 
@@ -111,13 +111,167 @@
 
     End Sub
 
+# 2 - Crie um módulo (normal)
+## Crie um módulo normal no seu projeto e insira o código abaixo.
+
+    Option Explicit
+
+    Private Declare PtrSafe Function GetForegroundWindow Lib "user32" () As Long
+
+    Declare PtrSafe Function SetWindowLong Lib "user32.dll" Alias "SetWindowLongA" ( _
+        ByVal hWnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
+
+    Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" ( _
+        ByVal lpClassName As String, ByVal lpWindowName As String) As Long
+
+    Declare PtrSafe Sub CopyMemory Lib "kernel32" Alias "RtlMoveMemory" _
+    (ByVal Destination As Long, ByVal Source As Long, ByVal Length As Long)
+
+    Declare PtrSafe Function SetWindowsHookEx Lib _
+    "user32" Alias "SetWindowsHookExA" (ByVal idHook As Long, ByVal lpfn As Long, _
+    ByVal hmod As Long, ByVal dwThreadId As Long) As Long
+
+    Declare PtrSafe Function CallNextHookEx Lib "user32" (ByVal hHook As Long, _
+    ByVal nCode As Long, ByVal wParam As Long, lParam As Any) As Long
+
+    Declare PtrSafe Function UnhookWindowsHookEx Lib "user32" (ByVal hHook As Long) As Long
+
+    Type POINTAPI
+    x As Long
+    Y As Long
+    End Type
+
+    Type MSLLHOOKSTRUCT
+        pt As POINTAPI
+        mouseData As Long
+        flags As Long
+        time As Long
+        dwExtraInfo As Long
+    End Type
+
+    Const HC_ACTION = 0
+    Const WH_MOUSE_LL = 14
+    Const WM_MOUSEWHEEL = &H20A
+
+    Dim hhkLowLevelMouse, lngInitialColor As Long
+    Dim udtlParamStuct As MSLLHOOKSTRUCT
+    Public intTopIndex As Integer
+
+    Function GetHookStruct(ByVal lParam As Long) As MSLLHOOKSTRUCT
+
+    CopyMemory VarPtr(udtlParamStuct), lParam, LenB(udtlParamStuct)
+
+    GetHookStruct = udtlParamStuct
+
+    End Function
+
+    Function LowLevelMouseProc _
+    (ByVal nCode As Long, ByVal wParam As Long, ByVal lParam As Long) As Long
+
+        On Error Resume Next
+
+        If (nCode = HC_ACTION) Then
+
+            If wParam = WM_MOUSEWHEEL Then
+
+                LowLevelMouseProc = True
+
+                'ATENÇÃO: Troque o nome do seu Userform
+                With UserForm1
+
+                    'ROLAR PARA CIMA
+                    If GetHookStruct(lParam).mouseData > 0 Then
+                        .ScrollTop = intTopIndex - 10
+                        intTopIndex = .ScrollTop
+                    Else
+                    'ROLAR PARA BAIXO
+                        .ScrollTop = intTopIndex + 10
+                        intTopIndex = .ScrollTop
+                    End If
+
+                End With
+
+            End If
+
+            Exit Function
+
+        End If
+
+        UnhookWindowsHookEx hhkLowLevelMouse
+        LowLevelMouseProc = CallNextHookEx(0, nCode, wParam, ByVal lParam)
+    End Function
+
+    Sub Hook_Mouse()
+        If hhkLowLevelMouse <> 0 Then
+            UnhookWindowsHookEx hhkLowLevelMouse
+        End If
+
+        hhkLowLevelMouse = SetWindowsHookEx _
+        (WH_MOUSE_LL, AddressOf LowLevelMouseProc, Application.Hinstance, 0)
+
+    End Sub
+
+    Sub UnHook_Mouse()
+
+        If hhkLowLevelMouse <> 0 Then UnhookWindowsHookEx hhkLowLevelMouse
+
+    End Sub
+
+# 3 - Crie um formulário
+## Pronto, agora em todos os formulários que você criar no seu projeto, insira o código abaixo. Cada um no seu respectivo procedimento.
+
+    'Essa parte vai no topo do seu código, fora dos subs e procedimentos'
+    Dim nAtualizaForm As New Classe1
+    Dim T
+    Dim frmUserWidth As Double
+    Dim frmUserWidthRatio As Double
+    Dim frmUserHeight As Double
+    Dim frmUserHeightRatio As Double
+    Dim r As Integer
+    Dim c As Integer
+    Dim ctl As Control
+
+    'No procedimento Activate do Userform'
+    Private Sub UserForm_Activate()
+    Set nAtualizaForm.Form = Me
+    End Sub
+
+    'No evento INITIALIZE do Userform'
+    Private Sub UserForm_Initialize()
+    Dim hWnd As Long
+
+        'Vai para o topo do formulário
+        ScrollTop = 0
+
+        'Define os botões minimizar e maximizar do form
+        hWnd = FindWindow(vbNullString, Me.Caption)
+        SetWindowLong hWnd, -16, &H20000 Or &H10000 Or &H84C80080
+        
+        frmUserWidth = Me.InsideWidth
+        frmUserHeight = Me.InsideHeight
+    end sub
 
 
+    'Essa parte no evento Resize'
+    Private Sub UserForm_Resize()
 
+        If Me.InsideHeight < 1 Then Exit Sub
+        
+        frmUserWidthRatio = Me.InsideWidth / frmUserWidth
+        frmUserHeightRatio = Me.InsideHeight / frmUserHeight
+        
+    ' Eliminate this section to prevent resizing of controls on form.
+        ' Stick any control on the form at any location.
+        For Each ctl In Me.Controls
+            ctl.Width = frmUserWidthRatio * ctl.Width
+            ctl.Left = frmUserWidthRatio * ctl.Left
+            ctl.Height = frmUserHeightRatio * ctl.Height
+            ctl.Top = frmUserHeightRatio * ctl.Top
+        Next
+        
+        frmUserWidth = Me.InsideWidth
+        frmUserHeight = Me.InsideHeight
 
-## 2 - Crie um módulo (normal)
-# Crie um módulo normal no seu projeto e insira o código abaixo.
+    End Sub
 
-## 3 - Crie um formulário
-# Pronto, agora em todos os formulários que você criar no seu projeto, insira o código abaixo. Cada um no seu respectivo procedimento.
 
