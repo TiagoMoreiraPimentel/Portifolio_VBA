@@ -4,6 +4,7 @@
 # Crie um módulo de classe no seu projeto VBA e cole o código abaixo.
 
 Option Explicit
+
 Private Declare PtrSafe Function FindWindow Lib "user32" Alias "FindWindowA" (ByVal lpClassName As String, ByVal lpWindowName As String) As Long
 Private Declare PtrSafe Function GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long) As Long
 Private Declare PtrSafe Function SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
@@ -109,7 +110,6 @@ Private Sub AtualizarEstiloForm()
     SetFocus hWndForm
 
 End Sub
-
 
 
 ## 2 - Crie um módulo (normal)
